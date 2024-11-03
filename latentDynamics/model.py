@@ -51,7 +51,7 @@ def frameDecoder(units, bottleneckShape, cropping, verbose=False):
     
     return model
 
-def latentDynamicsModel(windowLength: int, observationShape: Tuple["int"], verbose=False):
+def latentDynamicsModel(windowLength: int, observationShape: Tuple["int"], actionShape: Tuple["int"], verbose=False):
     input_shape = (windowLength, *observationShape)
 
     stateUnits = 300
@@ -60,13 +60,21 @@ def latentDynamicsModel(windowLength: int, observationShape: Tuple["int"], verbo
     encoder = frameEncoder(observationShape, padding, verbose=verbose)
     decoder = frameDecoder(stateUnits, bottleneckShape, padding, verbose=verbose)
 
-    model = models.Sequential([
-        layers.TimeDistributed(encoder, input_shape=input_shape),
-        # layers.SimpleRNN(stateUnits, activation="relu", return_sequences=True),
-        # layers.TimeDistributed(decoder)
-        layers.SimpleRNN(stateUnits, activation="relu"),
-        decoder,
-    ], name="Latent-Dynamics")
+    input_observations = layers.Input(shape=input_shape)
+    input_actions = layers.Input(shape=(windowLength, *actionShape))
+    x = layers.TimeDistributed(encoder, input_shape=input_shape)(input_observations)
+    x = layers.Concatenate(axis=2)([x, input_actions])
+    x = layers.SimpleRNN(stateUnits, activation="relu")(x)
+    x = decoder(x)
+    model = models.Model(inputs=[input_observations, input_actions], outputs=x, name="Latent-Dynamics")
+
+    # model = models.Sequential([
+    #     layers.TimeDistributed(encoder, input_shape=input_shape),
+    #     # layers.SimpleRNN(stateUnits, activation="relu", return_sequences=True),
+    #     # layers.TimeDistributed(decoder)
+    #     layers.SimpleRNN(stateUnits, activation="relu"),
+    #     decoder,
+    # ], name="Latent-Dynamics")
     
     if verbose:
         print()

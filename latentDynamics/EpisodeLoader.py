@@ -9,10 +9,11 @@ layers = tf.keras.layers
 models = tf.keras.models
 
 class EpisodeLoader(tf.keras.utils.Sequence):
-    def __init__(self, files, batchSize, windowLength, observationShape):
+    def __init__(self, files, batchSize, windowLength, observationShape, actionShape):
         self.batchSize = batchSize
         self.windowLength = windowLength
         self.observationShape = observationShape
+        self.actionShape = actionShape
         self.files = files
         self.episodes = self.loadEpisodes()
         self.windowList = self.buildWindowList()
@@ -52,18 +53,22 @@ class EpisodeLoader(tf.keras.utils.Sequence):
     def __getitem__(self, index):
         # start = time()
 
-        X = np.empty( (self.batchSize, self.windowLength - 1, *self.observationShape), dtype="float32" )
+        X_Observations = np.empty( (self.batchSize, self.windowLength - 1, *self.observationShape), dtype="float32" )
+        X_Actions = np.empty( (self.batchSize, self.windowLength - 1, *self.actionShape ), dtype="uint8" )
         Y = np.empty( (self.batchSize, *self.observationShape), dtype="float32" )
 
         for i in range(self.batchSize):
             windowIndex = index * self.batchSize + i
             episodeIndex, frameIndex = self.windowList[windowIndex]
+            endFrameIndex = frameIndex+self.windowLength-1
             observations, actions = self.episodes[episodeIndex]
-            X[i,] = observations[ frameIndex:frameIndex+self.windowLength-1 ]
-            Y[i] = observations[frameIndex+self.windowLength-1]
+            X_Observations[i,] = observations[ frameIndex:endFrameIndex ]
+            X_Actions[i,] = actions[ frameIndex:endFrameIndex ]
+            Y[i] = observations[ endFrameIndex ]
 
         # end = time()
         # size = (X.size * X.itemsize + Y.size * Y.itemsize) // (1000 * 1000)
         # print( "Generated", size, "MB batch in", end - start, "seconds." )
 
-        return (X / 255, Y / 255)
+        return ( [X_Observations / 255, X_Actions], Y / 255)
+

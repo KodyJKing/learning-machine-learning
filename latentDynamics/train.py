@@ -14,10 +14,11 @@ models = tf.keras.models
 
 checkpointPath = './checkpoints/latentDynamics'
 
-windowLength = 5
+windowLength = 1
 batchSize = 30
 observationShape = (210, 160, 3)
-numberOfEpisodes = 20
+actionShape = (4,)
+numberOfEpisodes = 200
 trainingSplit = 0.75
 
 def pltimg(img):
@@ -27,8 +28,6 @@ def pltimg(img):
     plt.imshow(img)
 
 def showSample(x, y, p):
-    print( np.shape(x), np.shape(y) )
-
     cols = windowLength + 2
     rows = len(p)
 
@@ -62,10 +61,11 @@ trainingFiles, validationFiles = splitEpisodes(
 loaderkw = {
     "batchSize": batchSize,
     "windowLength": windowLength + 1,
-    "observationShape": observationShape
+    "observationShape": observationShape,
+    "actionShape": (4,)
 }
 
-model = latentDynamicsModel(windowLength, observationShape, verbose=False)
+model = latentDynamicsModel(windowLength, observationShape, actionShape, verbose=False)
 model.compile(loss="mean_squared_error", optimizer="adam")
 
 try:
@@ -89,6 +89,7 @@ validationData = EpisodeLoader( validationFiles, **loaderkw )
 
 nrows = 3
 X, Y = validationData[0]
-X, Y = validationData[0]
+obs, actions = X
 P = model.predict(X)
-showSample(X[0:nrows], Y[0:nrows], P[0:nrows])
+# showSample(X[0:nrows], Y[0:nrows], P[0:nrows])
+showSample(obs[0:nrows], Y[0:nrows], P[0:nrows])

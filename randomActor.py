@@ -5,13 +5,15 @@ import gym
 import matplotlib.pyplot as plt
 
 # env = gym.make("ALE/Breakout-v5", render_mode="human")
-# env = gym.make("ALE/Breakout-v5")
-env = gym.make("ALE/Skiing-v5")
+env = gym.make("ALE/Breakout-v5")
+# env = gym.make("ALE/Skiing-v5")
 env.action_space.seed()
 
 datapath = "data/breakout_random_actor_episodes_2/"
-
 numruns = 100
+numActions = env.action_space.n
+actionVecs = np.identity(numActions, dtype="uint8")
+nullAction = 0
 
 for run in range(numruns):
     observations = []
@@ -27,11 +29,15 @@ for run in range(numruns):
         # plt.imshow(observation)
         # plt.show()
 
+        actionVec = actionVecs[action]
+
         observations.append(observation)
-        actions.append(action)
+        actions.append(actionVec)
         if done:
             break
     env.close()
+
+    actions.append(actionVecs[nullAction])
 
     print("\nSaving episode.")
 
